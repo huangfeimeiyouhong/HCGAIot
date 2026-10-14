@@ -1,0 +1,9 @@
+# Cloudflare Workers 静态资产部署配置（Git 构建：wrangler deploy 会读取本文件）
+# 部署内容 = iot-desktop 构建产物（由根 package.json 的 build 脚本先行产出）
+# ⚠️ 不要把 directory 指向源码目录（如 iot-cockpit），浏览器无法执行 .ts 源码
+name = "hcgaiot"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "./iot-desktop/dist"
+not_found_handling = "single-page-application"

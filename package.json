@@ -1,0 +1,8 @@
+{
+  "name": "hcg-aiot-platform",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd iot-desktop && npm install --include=dev --no-audit --no-fund && npm run build"
+  }
+}
