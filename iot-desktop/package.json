@@ -1,0 +1,38 @@
+{
+  "name": "aiot-bilateral-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit",
+    "verify:mock": "vite-node src/mock/__verify.ts",
+    "verify:flows": "node scripts/verify-flows.cjs",
+    "verify:qa": "node scripts/qa-verify.cjs"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@vueuse/core": "^14.4.0",
+    "decimal.js": "^10.6.0",
+    "echarts": "^5.6.0",
+    "element-plus": "^2.14.4",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.41",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.34",
+    "@vitejs/plugin-vue": "^4.4.0",
+    "sass": "1.62.0",
+    "typescript": "~5.6.3",
+    "vite": "^4.5.0",
+    "vite-node": "^1.6.1",
+    "vite-plugin-vue-setup-extend": "^0.4.0",
+    "vue-tsc": "^2.1.10"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

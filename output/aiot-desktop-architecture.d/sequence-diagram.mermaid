@@ -1,0 +1,193 @@
+%% ============================================================
+%% AIoT 桌面端 · 登录 → 拉取租户数据 → 渲染列表 → 筛选 → 分页 完整链路
+%% 对应架构文档 A9.1
+%% ============================================================
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant VE as 入口页/登录页<br/>views/common/login
+    participant GS as router/guard.ts
+    participant AS as store/auth.ts
+    participant API as api/vendor.ts
+    participant SC as mock/scope.ts
+    participant Q as mock/query.ts
+    participant DB as mock/db.ts
+    participant PG as 页面 views/vendor/devices
+    participant TBL as DataTable.vue
+    participant FK as store/filters.ts
+
+    U->>VE: 点击入口卡片「厂家端」
+    VE->>VE: router.push('/login?role=vendor')
+    VE->>VE: 读 query.role → 加载演示账号下拉<br/>（commonApi.getDemoAccounts('VENDOR')）
+    U->>VE: 选演示账号 → 点「登录」
+    VE->>AS: authStore.login({account,password,role})
+    AS->>API: authApi.login(payload)
+    API->>DB: 查 demoAccounts 匹配 account
+    DB-->>API: {role:'VENDOR', tenantId, vendorId, vendorType:'COOKWARE'}
+    API-->>AS: LoginResult
+    AS->>AS: 写 token / userInfo / role / tenantId / vendorId / vendorType
+    AS-->>VE: 登录成功
+    VE->>GS: router.push('/vendor/dashboard')
+    GS->>AS: useAuthStore() 读 role
+
+    Note over PG,TBL: —— 用户进入设备清单页 /vendor/devices ——
+    PG->>FK: 读上次筛选条件（切 Tab 保留）
+    FK-->>PG: {category:'REFRIGERATION', page:1, pageSize:20}
+    PG->>PG: useTable() 初始化 → loading=true
+    PG->>API: vendorApi.getDeviceList({page:1,pageSize:20,category})
+    API->>SC: resolveScope(authStore)  ← 隔离在此注入
+    SC->>DB: 读 tenants / bindings
+    DB-->>SC: 租户24 + 绑定120
+    SC->>SC: 计算 visibleDeviceSns =<br/>∃ACTIVE绑定.vendorId=self ∪ device.vendorIds∋self
+    SC-->>API: Scope{visibleDeviceSns:Set(28), visibleCustomerIds:Set(9), maskFields:[...]}
+    API->>Q: scopedQuery(db.devices, scope, {filter, sortBy, page, pageSize, searchFields})
+    Q->>Q: ① applyScopeFilter（行级隔离）<br/>② 字段裁剪（stripFields）<br/>③ 脱敏（maskFields → ***）<br/>④ keywordMatch<br/>⑤ sortBy<br/>⑥ paginate
+    Q->>DB: 读原始 db.devices（86 条）
+    DB-->>Q: Device[86]
+    Q-->>API: PageResult{list:Device[20], total:28, page:1, pageSize:20}
+    API->>API: delay(200ms)
+    API-->>PG: PageResult
+    PG->>PG: loading=false；tableData=res.list；total=res.total
+    PG->>TBL: :data="tableData" :columns="columns" :loading="loading"
+    TBL-->>U: 渲染 20 行 + 表头 + 「共 28 条」
+
+    Note over U,FK: —— 用户筛选 ——
+    U->>PG: 选品类「制冷」+ 输入 SN 关键字「CK-XA-2026」
+    PG->>PG: 下拉即时生效；输入防抖 300ms
+    PG->>PG: 筛选变化 → page 重置为 1（PRD 3.5）
+    PG->>API: vendorApi.getDeviceList({page:1,pageSize:20,category,kernel})
+    API->>SC: resolveScope(authStore)
+    SC-->>API: Scope（同上，scope 与登录态绑定，不随筛选变）
+    API->>Q: scopedQuery(...)
+    Q-->>API: PageResult{list:[2条], total:2}
+    API-->>PG: PageResult
+    PG->>PG: 无结果 → 渲染 EmptyState「无匹配结果，清除筛选」
+    PG->>FK: 持久化筛选条件（切 Tab 返回时保留）
+
+    Note over U,TBL: —— 用户翻页 ——
+    U->>TBL: 点第 2 页
+    TBL->>TBL: emit update:page=2, change(2,20)
+    TBL-->>PG: @change="loadData"
+    PG->>API: vendorApi.getDeviceList({page:2,pageSize:20,...})
+    API->>Q: scopedQuery(...) → 切片 [20:40]
+    API-->>PG: PageResult
+    PG->>TBL: 刷新 20 行
+
+
+%% ============================================================
+%% AIoT 桌面端 · 租户过滤决策流程
+%% 对应架构文档 A9.2
+%% ============================================================
+flowchart TD
+    A["api 层方法被调用<br/>如 vendorApi.getDeviceList(q)"] --> B["resolveScope(useAuthStore())"]
+    B --> C{"authStore.role ?"}
+
+    C -->|PLATFORM| D["visibleDeviceSns = null（全部）<br/>visibleCustomerIds = null<br/>maskFields = [contractNo, settlementAccount]"]
+    C -->|VENDOR| E{"authStore.vendorType ?"}
+    C -->|CUSTOMER| F["visibleDeviceSns = {sn | ∃绑定:<br/>customerId=self ∧ type=OWNERSHIP ∧ status=ACTIVE}<br/>visibleCustomerIds = {self}<br/>stripFields = [firmwareVersion, cost, components.*]"]
+
+    E -->|COOKWARE| G["visibleDeviceSns = {sn | ∃ACTIVE绑定.vendorId=self}<br/>∪ {sn | device.vendorIds ∋ self}<br/>visibleCustomerIds = {绑定到的客户}<br/>stripFields = [components.firmwareVersion, components.batch]"]
+    E -->|IOT| H["同 COOKWARE 的设备范围<br/>+ 可见部件台账<br/>stripFields += [params, cost]<br/>badgeText += '· 部件可见'"]
+
+    D --> I["scopedQuery(collection, scope, opts)"]
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J["applyScopeFilter(rows, scope)<br/>平台/不限 → 全量通过<br/>厂家 → sn ∈ visibleDeviceSns<br/>客户 → sn ∈ visibleDeviceSns"]
+    J --> K["applyFieldScope(rows, scope)<br/>maskFields 命中 → 值替换为 '***'<br/>stripFields 命中 → 删除该 key"]
+    K --> L["keywordMatch(searchFields, keyword)"]
+    L --> M["sortBy / sortOrder"]
+    M --> N["paginate(page, pageSize) → PageResult"]
+    N --> O["api 层 delay(200ms) 后返回页面"]
+
+    O --> P{"页面拿到的数据"}
+    P --> Q["✔ 天然满足说明书 2.4 可见范围<br/>✔ 页面永远拿不到全量数组引用"]
+    style Q fill:#E8F8EF,stroke:#05974A
+
+
+%% ============================================================
+%% AIoT 桌面端 · 工单状态流转（mock 内存态驱动按钮与徽标）
+%% 对应架构文档 A9.3
+%% ============================================================
+flowchart TD
+    subgraph S0["状态定义（constants/stateMachine.ts · 唯一真源）"]
+        M0["PENDING_ACCEPT 待接单<br/>actions: [接单 accept / 撤单 cancel(客户)]"]
+        M1["IN_PROGRESS 处理中<br/>actions: [更新进展 addProgress / 反馈 submitFeedback]"]
+        M2["PENDING_CONFIRM 待验收<br/>actions: [验收通过 accept(客户) / 验收驳回 reject(客户)]"]
+        M3["COMPLETED 已完成<br/>actions: [评价 rate(客户) / 归档 archive(满7天,自动)]"]
+        M4["CLOSED 已关闭<br/>actions: [] 只读"]
+    end
+
+    A["工单创建<br/>createWorkOrder()"] --> B["applyTransition<br/>to=PENDING_ACCEPT"]
+    B --> C["db.workOrders 状态改写<br/>+ 追加 TimelineRecord(创建)"]
+    C --> D["StateActions 组件读状态机<br/>渲染按钮：[接单] [撤单]"]
+    D --> E["StatusBadge 读 statusMap<br/>渲染徽标：待接单(橙底)"]
+    C --> F["SLA 计时开始<br/>deadlineAt = createdAt + sla.handleHours"]
+
+    F --> G{"厂家点「接单」<br/>必填：接单说明 + 预计到场时间"}
+    G -->|校验失败| G1["FormDialog 校验提示<br/>状态不变"]
+    G -->|通过| H["applyTransition(action=accept, to=IN_PROGRESS)"]
+    H --> I["时间轴追加：接单记录<br/>按钮组刷新为 [更新进展] [反馈]<br/>徽标 → 处理中(蓝底)"]
+
+    I --> J{"厂家点「更新进展」<br/>可多次"}
+    J -->|每次| K["applyTransition(action=addProgress)<br/>追加时间轴记录（不改变主状态）"]
+    K --> L["ProgressRecord 增长<br/>详情页进度列表即时增加"]
+
+    I --> M{"厂家点「反馈处理结果」<br/>必填：处理过程说明<br/>+ 备件更换记录表 + 现场照片"}
+    M -->|校验失败| M1["提示必填项"]
+    M -->|通过| N["applyTransition(action=submitFeedback, to=PENDING_CONFIRM)"]
+    N --> O["spareParts 落库<br/>客户工单详情可见备件记录表<br/>按钮组 → [验收通过] [验收驳回]"]
+
+    O --> P{"客户点「验收通过」"}
+    P -->|可选填评价| Q["applyTransition(to=COMPLETED)<br/>+ rating 写入"]
+    P2["客户点「验收驳回」<br/>必填驳回原因"] -->|原因非空| R["applyTransition(to=IN_PROGRESS)<br/>rejectCount += 1"]
+    R --> S{"rejectCount > 3 ?"}
+    S -->|是| S1["详情页顶部显示<br/>「需平台介入」警示"]
+    S -->|否| I
+    Q --> T{"completedAt 距今 > 7 天 ?"}
+    T -->|是（页面按 mock 时间戳判定）| U["applyTransition(action=archive, to=CLOSED)"]
+    U --> V["按钮组为空<br/>StatusBadge → 已关闭(灰底)<br/>整页只读"]
+
+    F -.->|"SLA 剩余比例监控"| W["escalationLevel 计算<br/>≥80% → 一级提醒(站内信)<br/>≥100% → 二级催办(站内信+短信)<br/>≥200% → 三级升级(平台介入 + 标记争议)"]
+    W -.->|"disputeFlag=true"| X["平台端 /platform/work-orders<br/>标记争议 → /platform/disputes"]
+
+    style M0 fill:#FFF7E8,stroke:#D48806
+    style M1 fill:#E8F4FF,stroke:#0B7CAE
+    style M2 fill:#F5EEFF,stroke:#7C4DBE
+    style M3 fill:#E8F8EF,stroke:#05974A
+    style M4 fill:#F2F3F5,stroke:#86909C
+    style V fill:#F2F3F5,stroke:#86909C
+    style S1 fill:#FFECEC,stroke:#D92D2F
+
+
+%% ============================================================
+%% AIoT 桌面端 · 入驻申请 7 状态流转
+%% 对应架构文档 A9.4
+%% ============================================================
+stateDiagram-v2
+    direction LR
+    [*] --> DRAFT: 厂家创建申请
+    DRAFT --> PENDING_PRIMARY: 提交审核（关键字段锁定）
+    PENDING_PRIMARY --> PENDING_SECONDARY: 平台「通过初审」<br/>（+ 填技术对接/商务确认）
+    PENDING_PRIMARY --> RECTIFY: 平台「退回补充」<br/>必填原因
+    PENDING_SECONDARY --> TRIAL: 复审「通过复审」<br/>提示试运营 60 天
+    PENDING_SECONDARY --> RECTIFY: 资料问题 →「标记整改」<br/>必填原因
+    PENDING_SECONDARY --> REJECTED: 能力问题 →「驳回」<br/>必填原因
+    RECTIFY --> PENDING_SECONDARY: 厂家「提交整改材料」→ 重新提交
+    REJECTED --> [*]: 厂家「重新发起申请」→ 新 DRAFT
+    TRIAL --> ACTIVE: 平台租户管理「确认转正」<br/>解锁 /vendor/models /vendor/accounts
+    ACTIVE --> [*]
+
+    note right of PENDING_PRIMARY
+        V-02 页面：表单字段 :disabled="locked"
+        厂家侧显示「当前卡在此步骤」
+    end note
+    note right of RECTIFY
+        厂家侧显示 rectifyReason
+        + 「提交整改材料」按钮
+    end note
+    note right of REJECTED
+        厂家侧显示 rejectReason
+        + 「重新发起申请」按钮
+    end note

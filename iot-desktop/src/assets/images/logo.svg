@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 56" width="64" height="56">
+  <defs>
+    <linearGradient id="lg-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6fd8ff"/>
+      <stop offset="1" stop-color="#2f6bff"/>
+    </linearGradient>
+    <linearGradient id="lg-bars" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9efff"/>
+      <stop offset="0.55" stop-color="#5cc8ff"/>
+      <stop offset="1" stop-color="#2f8bff"/>
+    </linearGradient>
+    <radialGradient id="rg-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2f8bff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#2f8bff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 中心辉光 -->
+  <circle cx="32" cy="29" r="16" fill="url(#rg-glow)"/>
+
+  <!-- 外环:分段雷达环 -->
+  <circle cx="32" cy="28" r="24" fill="none" stroke="url(#lg-ring)" stroke-width="2.5"
+          stroke-linecap="round" stroke-dasharray="38 14" transform="rotate(-76 32 28)"/>
+  <!-- 内环:细虚线刻度环 -->
+  <circle cx="32" cy="28" r="18.5" fill="none" stroke="rgba(111,216,255,0.35)" stroke-width="1"
+          stroke-dasharray="3 5"/>
+
+  <!-- 轨道节点(外环亮点,带光晕) -->
+  <circle cx="50.6" cy="12.4" r="4.5" fill="rgba(139,242,255,0.25)"/>
+  <circle cx="50.6" cy="12.4" r="2.4" fill="#8bf2ff"/>
+
+  <!-- 中心:三根上升数据柱 -->
+  <rect x="22.5" y="30" width="5" height="10" rx="2" fill="url(#lg-bars)" opacity="0.9"/>
+  <rect x="29.5" y="24" width="5" height="16" rx="2" fill="url(#lg-bars)"/>
+  <rect x="36.5" y="18" width="5" height="22" rx="2" fill="url(#lg-bars)"/>
+  <!-- 基线 -->
+  <rect x="20.5" y="43" width="23" height="2" rx="1" fill="rgba(139,242,255,0.55)"/>
+</svg>

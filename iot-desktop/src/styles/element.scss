@@ -1,0 +1,54 @@
+// ============================================================
+// Element Plus 主题覆写 —— 仅 --el-* CSS 变量覆盖 + 少量必要选择器
+// 改主色时需同步：variables.scss 的 :root + 此文件的 light 阶（约定 6 / S3）
+// ============================================================
+:root {
+  --el-color-primary: #41C0FF;
+  --el-color-primary-light-3: #7BD2FF;
+  --el-color-primary-light-5: #A5DFFF;
+  --el-color-primary-light-7: #CDEFFF;
+  --el-color-primary-light-8: #E0F5FF;
+  --el-color-primary-light-9: #E8F6FF;   // 与 --color-primary-bg 对齐
+  --el-color-primary-dark-2: #1FA8E0;
+  --el-color-success: #07C160;
+  --el-color-warning: #FA8C16;
+  --el-color-danger:  #FF4D4F;
+  --el-color-info:    #41C0FF;
+  --el-text-color-primary:   #1D2129;
+  --el-text-color-regular:   #4E5969;
+  --el-text-color-secondary: #86909C;
+  --el-border-color:        #E5E6EB;
+  --el-border-color-light:  #F2F3F5;
+  --el-fill-color-light:     #F2F3F5;
+  --el-border-radius-base:   4px;
+}
+
+/* EP 表格：浅色细边框 + 表头底 */
+.el-table {
+  --el-table-border-color: var(--color-border);
+  --el-table-header-bg-color: var(--color-fill-light);
+  --el-table-header-text-color: var(--color-text-title);
+  --el-table-row-hover-bg-color: var(--color-primary-bg);
+}
+
+/* EP 弹窗：圆角与阴影对齐卡片规范 */
+.el-dialog {
+  border-radius: var(--layout-card-radius);
+}
+
+/* 按钮：主按钮白底文字对比度不足，文字改用深主色 */
+.el-button--primary {
+  --el-button-text-color: #0B3A52;
+  --el-button-hover-text-color: #0B3A52;
+  --el-button-active-text-color: #0B3A52;
+}
+
+/* 消息提示：留白更贴近卡片圆角 */
+.el-message {
+  border-radius: var(--layout-card-radius);
+}
+
+/* 表格空态：底色透明，交给 EmptyState 渲染 */
+.el-table__empty-block {
+  background: transparent;
+}

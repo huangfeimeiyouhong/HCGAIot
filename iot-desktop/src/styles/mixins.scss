@@ -1,0 +1,63 @@
+// ============================================================
+// 混入层 —— 通用布局/文本/卡片/滚动条混入
+// ============================================================
+
+/// 单行或多行文本省略
+@mixin ellipsis($lines: 1) {
+  overflow: hidden;
+  @if $lines == 1 {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+  }
+}
+
+/// 水平垂直居中
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/// 水平两端对齐
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/// 卡片容器
+@mixin card {
+  background: var(--color-bg-container);
+  border-radius: var(--layout-card-radius);
+  box-shadow: var(--layout-card-shadow);
+  padding: 16px;
+}
+
+/// 内容区滚动：布局壳的滚动容器必须挂这个，body 不滚动
+@mixin page-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/// 细滚动条
+@mixin thin-scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #D0D3D9;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #A9AEB8;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

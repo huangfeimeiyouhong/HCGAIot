@@ -1,0 +1,38 @@
+{
+  "genre": "business-report",
+  "theme": "business-modern",
+  "template_used": "business-report.html",
+  "typography": {
+    "fontFamily_heading": "黑体, SimHei, sans-serif",
+    "fontFamily_body": "宋体, SimSun, serif",
+    "fontSize_h1": "18pt",
+    "fontSize_h2": "15pt",
+    "fontSize_h3": "13pt",
+    "fontSize_body": "12pt",
+    "fontSize_small": "10pt",
+    "lineHeight_body": 1.7,
+    "fontWeight_bold": 700
+  },
+  "color": {
+    "primary": "#1a5fb4",
+    "text": "#000000",
+    "muted": "#5f6368",
+    "border": "#c8d0dc",
+    "bg": "#ffffff",
+    "highlight": "#f2f6fb",
+    "accent": "#1a5fb4"
+  },
+  "layout": {
+    "margin": "2.4cm",
+    "spacing_paragraph": "0.75em",
+    "spacing_section": "1.8em",
+    "spacing_block": "1em"
+  },
+  "statusPalette": {
+    "urgent": "#c5221f",
+    "important": "#b06000",
+    "normal": "#1a5fb4",
+    "success": "#1e7e34"
+  },
+  "notes": "平台业务逻辑设计说明书，采用业务报告体例；表格密集，强调结构化与可追溯性。"
+}

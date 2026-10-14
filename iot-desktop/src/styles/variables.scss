@@ -1,0 +1,106 @@
+// ============================================================
+// 设计令牌 —— 三入口唯一真源。禁止在页面 SCSS 中出现任何色值字面量。
+// ============================================================
+
+/* ---------- 主色（品牌蓝） ---------- */
+:root {
+  --color-primary:        #41C0FF;  // 主按钮、选中态、图表主色
+  --color-primary-hover:  #6ACFFF;
+  --color-primary-active: #1FA8E0;
+  --color-primary-text:   #0B7CAE;  // 浅底文字型主色（#41C0FF 白底对比度仅 1.9:1，不达 AA）
+  --color-primary-bg:     #E8F6FF;  // 选中行底、标签底、hover 底
+}
+
+/* ---------- 语义色 ---------- */
+:root {
+  --color-success: #07C160;
+  --color-warning: #FA8C16;
+  --color-danger:  #FF4D4F;
+  --color-info:    #41C0FF;
+  --color-purple:  #B78FFF;
+}
+
+/* ---------- 中性色 ---------- */
+:root {
+  --color-text-title:     #1D2129;
+  --color-text-body:      #4E5969;
+  --color-text-secondary: #86909C;
+  --color-text-disabled:  #C9CDD4;
+  --color-border:         #E5E6EB;
+  --color-border-light:   #F2F3F5;
+  --color-bg-page:        #F5F6F8;
+  --color-bg-container:   #FFFFFF;
+  --color-fill-light:     #F2F3F5;  // 表头底、hover 底
+  --color-sidebar-bg:     #1D2129;  // 侧边栏深色（唯一深色区块）
+  --color-sidebar-text:   #C9CDD4;
+  --color-sidebar-active: #41C0FF;
+}
+
+/* ---------- 深色场景（仅登录页 / 入口页） ---------- */
+:root {
+  --color-bg-dark:   #061230;
+  /* 地图加载期的径向渐变兜底（内圈略亮，避免纯黑显得死板） */
+  --color-bg-dark-2: #0D2B52;
+  --color-dark-line: #16507E;
+  --color-dark-high: #37D4CF;
+  --color-dark-text: #E6F1FF;
+  --color-dark-dim:  #8FB3D9;
+  /* 深色底上的强对比文字（标题）与错误提示色 */
+  --color-dark-strong: #FFFFFF;
+  --color-dark-danger: #FF7875;
+}
+
+/* ---------- 布局尺寸 ---------- */
+:root {
+  --layout-sidebar-width:        220px;
+  --layout-sidebar-width-folded: 64px;
+  --layout-topbar-height:        56px;
+  --layout-content-padding:      16px 24px;
+  --layout-content-max-width:    1600px;
+  --layout-card-gap:             16px;
+  --layout-card-radius:          8px;
+  --layout-card-shadow:          0 2px 8px rgba(0, 0, 0, .06);
+  --layout-table-row-height:     44px;
+}
+
+/* ---------- 状态徽标矩阵（PRD 3.2，共 9 组） ---------- */
+:root {
+  /* 1 待接单/待初审/待复审/待整改 */
+  --badge-waiting-bg:   #FFF7E8;  --badge-waiting-text:   #D48806;
+  /* 2 试运营/待确认 */
+  --badge-trial-bg:     #F0F5FF;  --badge-trial-text:     #2B5FD9;
+  /* 3 正式入驻/生效中/已完成/在线/正常 */
+  --badge-success-bg:   #E8F8EF;  --badge-success-text:   #05974A;
+  /* 4 处理中 */
+  --badge-processing-bg:#E8F4FF;  --badge-processing-text:#0B7CAE;
+  /* 5 待验收 */
+  --badge-confirm-bg:   #F5EEFF;  --badge-confirm-text:   #7C4DBE;
+  /* 6 已关闭/已解除/离线/已归档 */
+  --badge-closed-bg:    #F2F3F5;  --badge-closed-text:    #86909C;
+  /* 7 已驳回/异常/严重/紧急 */
+  --badge-reject-bg:    #FFECEC;  --badge-reject-text:    #D92D2F;
+  /* 8 信息/进行中（等同主色系） */
+  --badge-info-bg:      #E8F6FF;  --badge-info-text:      #0B7CAE;
+  /* 9 提醒/促销等扩展 */
+  --badge-notice-bg:    #FEF3E2;  --badge-notice-text:    #B25E09;
+}
+
+// ============================================================
+// SCSS 变量映射（供 SCSS 中直接使用，避免 var() 在某些属性上的兼容问题）
+// ============================================================
+$primary:        #41C0FF;
+$primary-text:   #0B7CAE;
+$success:        #07C160;
+$warning:        #FA8C16;
+$danger:         #FF4D4F;
+$purple:         #B78FFF;
+$text-title:     #1D2129;
+$text-body:      #4E5969;
+$text-secondary: #86909C;
+$border:         #E5E6EB;
+$bg-page:        #F5F6F8;
+$bg-container:   #FFFFFF;
+
+$sidebar-w:      220px;
+$sidebar-w-fold: 64px;
+$topbar-h:       56px;

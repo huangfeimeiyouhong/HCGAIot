@@ -1,0 +1,18 @@
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+
+# 本地环境配置（保留 .env.example 作为模板）
+.env
+.env.local
+
+# 编辑器 / 系统
+.DS_Store
+.vscode/
+.idea/
+screenshots/
+
+# 本地工具与代理数据（不入库）
+.workbuddy/
+*.log

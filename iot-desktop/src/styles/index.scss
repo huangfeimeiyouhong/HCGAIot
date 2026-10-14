@@ -1,0 +1,89 @@
+// ============================================================
+// 全局基础样式 —— reset + body 浅色 + 可见滚动条 + 工具类
+// ⚠️ 与 iot-cockpit 相反：桌面端必须页面级滚动，禁止 overflow:hidden 与零宽滚动条
+// ============================================================
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+@use './element.scss' as *;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  overflow: auto;
+  background: var(--color-bg-page);
+  color: var(--color-text-body);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// 细滚动条（保留可见性，禁止 width:0）
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #D0D3D9;
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #A9AEB8;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+// ---------- 工具类 ----------
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  @include card;
+}
+
+.ellipsis {
+  @include ellipsis(1);
+}
+
+.ellipsis-2 {
+  @include ellipsis(2);
+}
+
+// 浅底文字型主色链接（#41C0FF 在白底对比度不足，浅底一律用这个）
+.link-primary {
+  color: var(--color-primary-text);
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-primary-active);
+  }
+}
+
+// ---------- 深色全屏页（入口页 / 登录页 / 演示页 / 错误页） ----------
+.dark-page {
+  min-height: 100vh;
+  background: var(--color-bg-dark);
+  color: var(--color-dark-text);
+}

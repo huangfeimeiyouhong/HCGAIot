@@ -1,0 +1,46 @@
+/* 全局基础样式 */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #061230;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  color: #fff;
+}
+
+/*
+ * 字体钩子(品牌字体请自行接入):
+ * --cockpit-title-font —— 标题字体族(CSS 变量,组件内 font-family 直接消费);
+ * .font-title  —— 面板/页面标题;.font-digital —— 数字/指标。
+ * 接入方式:声明 @font-face 后把变量/类指向自有字体;未接入时回落系统字重,不影响功能。
+ */
+:root {
+  --cockpit-title-font: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --cockpit-digital-font: 'DIN Alternate', 'Bahnschrift', 'Arial Narrow', sans-serif;
+}
+
+.font-title {
+  font-family: var(--cockpit-title-font);
+  font-weight: 700;
+}
+
+.font-digital {
+  font-family: var(--cockpit-digital-font);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* 大屏场景隐藏全局滚动条(滚动容器内部仍可滚轮滚动) */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

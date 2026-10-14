@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23061230'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%2341C0FF' stroke-width='3'/%3E%3C/svg%3E" type="image/svg+xml">
+<title>后厨管家 · AIoT 平台运营监控中心</title>
+<style>
+/* ===================== 设计令牌 ===================== */
+:root{
+  --primary:#41C0FF; --green:#07C160; --orange:#FA8C16; --red:#FF4D4F;
+  --purple:#B78FFF; --teal:#37D4CF; --gray:#94A3B8;
+  --map-empty:#0B2B4F; --map-low:#16507E; --map-high:#37D4CF;
+  --text:#E6F1FF; --text-dim:#8FB3D9;
+  --bg-0:#041234; --bg-1:#061a3d; --bg-2:#0a2551;
+  --line:rgba(65,192,255,.18); --line-soft:rgba(65,192,255,.12);
+  --fill:rgba(65,192,255,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#020a1c}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+.font-digital{font-family:"DIN Alternate","Bahnschrift","Impact","Arial Narrow",sans-serif;font-weight:700;letter-spacing:.5px}
+
+/* ===================== 等比缩放壳(1920×1080) ===================== */
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#screen{
+  position:relative;width:1920px;height:1080px;flex:0 0 auto;
+  transform-origin:center center;
+  background:
+    radial-gradient(1200px 600px at 50% -10%,rgba(65,192,255,.14),transparent 60%),
+    radial-gradient(900px 500px at 8% 100%,rgba(7,193,96,.08),transparent 60%),
+    radial-gradient(900px 500px at 92% 100%,rgba(183,143,255,.07),transparent 60%),
+    linear-gradient(180deg,var(--bg-0) 0%,#031028 55%,#020a1c 100%);
+  overflow:hidden;
+}
+#screen::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(65,192,255,.045) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(65,192,255,.045) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at center,black 30%,transparent 78%);
+  -webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 78%);
+}
+
+/* ===================== 顶部标题栏 ===================== */
+.hd{position:relative;height:84px;display:flex;align-items:center;justify-content:center;z-index:3}
+.hd__deco{position:absolute;left:50%;top:0;transform:translateX(-50%);width:1180px;height:84px;pointer-events:none}
+.hd__title{
+  position:relative;font-size:40px;font-weight:800;letter-spacing:6px;
+  background:linear-gradient(180deg,#FFFFFF 20%,#8FD8FF 60%,#41C0FF 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 26px rgba(65,192,255,.45);white-space:nowrap;
+}
+.hd__crumb{position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:10px}
+.hd__crumb .cur{color:var(--primary);font-size:16px;font-weight:600}
+.hd__right{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:18px}
+.hd__clock{text-align:right;line-height:1.25}
+.hd__date{font-size:13px;color:var(--text-dim);letter-spacing:1px}
+.hd__time{font-size:24px;color:#fff}
+.icon-btn{
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(65,192,255,.35);border-radius:4px;background:rgba(65,192,255,.08);
+  cursor:pointer;transition:.2s;
+}
+.icon-btn:hover{background:rgba(65,192,255,.2);border-color:var(--primary)}
+.icon-btn svg{width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:1.8}
+
+/* ===================== 平台运行状态条 ===================== */
+.strip{
+  position:relative;height:68px;flex:0 0 68px;display:flex;align-items:center;
+  margin:0 20px 14px;padding:0 18px;gap:0;
+  background:linear-gradient(90deg,rgba(65,192,255,.10),rgba(7,193,96,.05) 60%,rgba(183,143,255,.06));
+  border:1px solid var(--line);border-radius:8px;z-index:2;
+}
+.strip__label{
+  flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;padding-right:18px;margin-right:6px;
+  border-right:1px solid var(--line-soft);
+}
+.strip__label b{font-size:15px;color:#fff;letter-spacing:1px}
+.strip__label span{font-size:11px;color:rgba(143,179,217,.7)}
+.strip__item{
+  flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0 14px;
+  border-right:1px solid var(--line-soft);height:42px;
+}
+.strip__item:last-child{border-right:none}
+.strip__ico{width:10px;height:10px;border-radius:50%;flex:0 0 10px;box-shadow:0 0 8px currentColor}
+.strip__meta{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.strip__l{font-size:12px;color:rgba(143,179,217,.9);white-space:nowrap}
+.strip__v{font-size:21px;color:#fff;white-space:nowrap}
+.strip__v small{font-size:12px;color:rgba(143,179,217,.8);margin-left:2px}
+
+/* ===================== 主体三栏 ===================== */
+.main{position:relative;z-index:2;display:flex;gap:20px;height:894px;padding:0 20px 20px}
+.col{display:flex;flex-direction:column;gap:20px;min-width:0;height:100%}
+.col--left{width:472px;flex:0 0 472px}
+.col--center{flex:1}
+.col--right{width:488px;flex:0 0 488px}
+
+/* ===================== 面板 ===================== */
+.panel{position:relative;display:flex;flex-direction:column;min-height:0;
+  background:linear-gradient(180deg,rgba(10,37,81,.42),rgba(4,18,52,.28));
+  border:1px solid rgba(65,192,255,.16);
+}
+.panel::before,.panel::after{content:'';position:absolute;width:16px;height:16px;pointer-events:none}
+.panel::before{left:-1px;top:-1px;border-left:2px solid var(--primary);border-top:2px solid var(--primary)}
+.panel::after{right:-1px;bottom:-1px;border-right:2px solid var(--primary);border-bottom:2px solid var(--primary)}
+.panel__hd{position:relative;height:42px;flex:0 0 42px;display:flex;align-items:center;padding:0 14px;
+  background:linear-gradient(90deg,rgba(65,192,255,.18),rgba(65,192,255,.02) 70%);}
+.panel__hd::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;
+  background:linear-gradient(90deg,rgba(65,192,255,.75),rgba(65,192,255,.05))}
+.panel__title{font-size:20px;font-weight:700;letter-spacing:2px;color:#fff;display:flex;align-items:center;gap:8px}
+.panel__title::before{content:'';width:3px;height:14px;background:var(--primary);border-radius:2px;box-shadow:0 0 8px var(--primary)}
+.panel__extra{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-dim)}
+.back-btn{
+  background:transparent;border:1px solid rgba(65,192,255,.4);color:var(--text-dim);
+  font-size:13px;padding:3px 10px;border-radius:4px;cursor:pointer;transition:.2s;
+}
+.back-btn:hover{color:#fff;border-color:var(--primary);background:rgba(65,192,255,.12)}
+.panel__bd{flex:1;min-height:0;padding:12px 14px;position:relative}
+.p1{height:430px;flex:0 0 430px}
+.p1 .panel__bd{display:flex;flex-direction:column}
+.p2 .panel__bd{display:flex;flex-direction:column}
+.p3{height:344px;flex:0 0 344px}
+.p6{height:356px;flex:0 0 356px}
+.pflex{flex:1 1 auto;min-height:0}
+.pflex .panel__bd{min-height:0}
+.chart{width:100%;height:100%}
+
+/* ===================== P1 平台经营总览 ===================== */
+.kpi-row{display:flex;gap:8px;height:74px;flex:0 0 74px}
+.kpi-chip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:var(--fill);border:1px solid var(--line);border-radius:6px}
+.kpi-chip__label{font-size:12px;color:var(--text-dim);white-space:nowrap}
+.kpi-chip__value{font-size:25px;line-height:1.1}
+.kpi-chip__sub{font-size:10px;color:rgba(143,179,217,.7);white-space:nowrap}
+.donut-wrap{position:relative;flex:1;min-height:0;margin-top:10px}
+.donut-wrap > .chart{position:absolute;inset:0}
+.donut-center{position:absolute;left:32%;top:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;pointer-events:none;z-index:1}
+.donut-center__value{font-size:30px;line-height:1;color:#fff}
+.donut-center__label{margin-top:4px;font-size:12px;color:var(--text-dim)}
+.sub-row{display:flex;gap:8px;height:50px;flex:0 0 50px;margin-top:10px}
+.sub-chip{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:rgba(255,255,255,.03);border:1px solid var(--line-soft);border-radius:6px}
+.sub-chip__v{font-size:18px;color:var(--primary)}
+.sub-chip__l{font-size:11px;color:rgba(143,179,217,.85)}
+
+/* ===================== P2 工单调度 ===================== */
+.wo-block{display:flex;flex-direction:column;min-height:0;flex:1}
+.wo-hd{height:24px;flex:0 0 24px;display:flex;align-items:center;justify-content:space-between}
+.wo-hd b{font-size:14px;color:#E6F1FF;display:flex;align-items:center;gap:6px}
+.wo-hd b::before{content:'';width:3px;height:12px;background:var(--primary);border-radius:2px}
+.wo-hd span{font-size:12px;color:var(--text-dim)}
+.wo-bar-wrap{flex:0 0 86px;margin-top:6px;position:relative}
+.load-wrap{flex:1;min-height:0;margin-top:10px;position:relative}
+.load-chart{position:absolute;inset:0}
+.wo-foot{display:flex;gap:10px;height:48px;flex:0 0 48px;margin-top:8px}
+.wo-foot__chip{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:var(--fill);border:1px solid var(--line);border-radius:6px}
+.wo-foot__v{font-size:22px}
+.wo-foot__l{font-size:11px;color:rgba(143,179,217,.85)}
+
+/* ===================== P3 核心指标趋势 ===================== */
+.trend{display:flex;gap:14px;width:100%;height:100%}
+.trend__blk{flex:1;min-width:0;display:flex;flex-direction:column}
+.trend__hd{height:26px;flex:0 0 26px;display:flex;align-items:center;justify-content:space-between}
+.trend__t{font-size:14px;font-weight:600;color:#E6F1FF;display:flex;align-items:center;gap:6px}
+.trend__t::before{content:'';width:3px;height:12px;background:var(--primary);border-radius:2px}
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.badge--a{color:var(--primary);border:1px solid rgba(65,192,255,.4);background:rgba(65,192,255,.1)}
+.badge--w{color:var(--teal);border:1px solid rgba(55,212,207,.4);background:rgba(55,212,207,.1)}
+
+/* ===================== P4 厂商·客户地域覆盖 ===================== */
+.rmap{position:relative;width:100%;height:100%}
+.rmap__chart{position:absolute;inset:0}
+.rmap__overlay{position:absolute;top:4px;left:8px;display:flex;flex-direction:column;gap:8px;z-index:2}
+.ostat{display:flex;align-items:baseline;gap:6px;padding:5px 10px;background:rgba(4,18,52,.72);
+  border:1px solid rgba(65,192,255,.22);border-radius:4px}
+.ostat__l{font-size:12px;color:rgba(143,179,217,.9)}
+.ostat__v{font-size:20px;color:var(--primary)}
+.rmap__legend{position:absolute;right:12px;bottom:10px;display:flex;align-items:center;gap:6px;z-index:2}
+.rmap__legend span{font-size:11px;color:rgba(143,179,217,.85)}
+.rmap__bar{width:110px;height:8px;border-radius:4px;background:linear-gradient(90deg,#0b2b4f,#16507e 50%,#37d4cf)}
+.rmap__hint{position:absolute;left:8px;bottom:10px;display:flex;align-items:center;gap:6px;
+  font-size:12px;color:rgba(143,179,217,.85);z-index:2}
+.rmap__dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.city-list{position:absolute;right:10px;top:4px;width:200px;z-index:2;display:flex;flex-direction:column;gap:4px}
+.city-row{display:flex;align-items:center;gap:8px;padding:4px 8px;background:rgba(4,18,52,.66);
+  border:1px solid rgba(65,192,255,.14);border-radius:4px;font-size:12px}
+.city-row__n{color:#E6F1FF;width:46px;flex:0 0 46px}
+.city-row__bar{flex:1;height:5px;background:rgba(65,192,255,.12);border-radius:3px;overflow:hidden}
+.city-row__bar i{display:block;height:100%;background:linear-gradient(90deg,#16507e,#37d4cf)}
+.city-row__v{color:var(--primary);width:34px;text-align:right;font-size:12px}
+
+/* ===================== P5 异常告警中心 ===================== */
+.level-row{display:flex;gap:10px;height:80px;flex:0 0 80px}
+.level-card{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:var(--fill);border:1px solid var(--line);border-radius:6px;position:relative;overflow:hidden}
+.level-card__c{font-size:29px;line-height:1.05}
+.level-card__l{font-size:13px;color:#E6F1FF}
+.level-card__s{font-size:10px;color:rgba(143,179,217,.7)}
+.src-wrap{height:150px;flex:0 0 150px;margin-top:12px;display:flex;gap:10px}
+.src-pie{flex:1;min-width:0;position:relative}
+.src-legend{flex:0 0 150px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.src-legend__item{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(230,241,255,.9)}
+.src-legend__dot{width:9px;height:9px;border-radius:2px;flex:0 0 9px}
+.src-legend__v{margin-left:auto;color:#fff}
+.ticker{flex:1;min-height:0;margin-top:12px;display:flex;flex-direction:column}
+.ticker__hd{height:26px;flex:0 0 26px;display:flex;align-items:center;justify-content:space-between}
+.ticker__t{font-size:15px;font-weight:600;color:#E6F1FF;display:flex;align-items:center;gap:6px}
+.ticker__t::before{content:'';width:3px;height:12px;background:var(--primary);border-radius:2px}
+.ticker__hint{font-size:11px;color:rgba(143,179,217,.6)}
+.ticker__vp{flex:1;min-height:0;overflow:hidden;margin-top:4px}
+.ticker__tr{transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.ticker__tr--no{transition:none}
+.alarm{display:flex;gap:8px;height:78px;padding:7px 9px;margin-bottom:8px;
+  background:rgba(65,192,255,.05);border:1px solid var(--line-soft);border-radius:6px;overflow:hidden}
+.alarm__lv{flex:0 0 22px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:#041234;font-weight:700;writing-mode:vertical-lr;letter-spacing:2px}
+.alarm__bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.alarm__r1{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.alarm__sub{font-size:14px;color:#E6F1FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alarm__time{font-size:11px;color:rgba(143,179,217,.75);flex:0 0 auto;font-family:"DIN Alternate",Bahnschrift,sans-serif}
+.alarm__r2{font-size:12px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alarm__ct{font-size:12px;color:rgba(143,179,217,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alarm-ft{flex:0 0 auto;margin-top:8px;text-align:center;font-size:11px;color:rgba(143,179,217,.55)}
+
+/* ===================== P6 关键绩效 & 运营待办 ===================== */
+.kpi-score{display:flex;gap:8px;height:92px;flex:0 0 92px}
+.score{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:var(--fill);border:1px solid var(--line);border-radius:6px;position:relative}
+.score__v{font-size:24px;line-height:1.05;color:#fff}
+.score__l{font-size:11px;color:rgba(143,179,217,.9)}
+.score__t{font-size:10px;color:rgba(143,179,217,.6)}
+.score__bar{position:absolute;left:0;bottom:0;height:3px;background:var(--green);border-radius:0 0 6px 6px}
+.todo{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;margin-top:12px;justify-content:center}
+.todo__item{display:flex;align-items:center;gap:10px;padding:0 12px;height:40px;flex:0 0 40px;
+  background:rgba(255,255,255,.03);border:1px solid var(--line-soft);border-radius:6px}
+.todo__dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;box-shadow:0 0 8px currentColor}
+.todo__l{font-size:14px;color:#E6F1FF;flex:1}
+.todo__v{font-size:24px;color:#fff}
+.todo__u{font-size:11px;color:rgba(143,179,217,.6);margin-left:4px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="screen">
+
+  <!-- ===================== 顶部 ===================== -->
+  <header class="hd">
+    <svg class="hd__deco" viewBox="0 0 1180 84" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="hg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#41C0FF" stop-opacity="0"/>
+          <stop offset=".5" stop-color="#41C0FF" stop-opacity=".55"/>
+          <stop offset="1" stop-color="#41C0FF" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M0 60 L180 60 L240 34 L940 34 L1000 60 L1180 60" fill="none" stroke="url(#hg)" stroke-width="1"/>
+      <path d="M240 34 L940 34 L1000 60 L1180 60 L1180 84 L0 84 L0 60 L180 60 Z" fill="#41C0FF" fill-opacity=".05"/>
+      <circle cx="590" cy="34" r="3.5" fill="#41C0FF"/>
+      <circle cx="590" cy="34" r="9" fill="none" stroke="#41C0FF" stroke-opacity=".45"/>
+    </svg>
+
+    <div class="hd__crumb">
+      <span class="cur">平台运营视角 · 总览大屏</span>
+    </div>
+
+    <h1 class="hd__title">后厨管家 · AIoT 平台运营监控中心</h1>
+
+    <div class="hd__right">
+      <div class="hd__clock">
+        <div class="hd__date font-digital" id="clockDate">2026-01-01 星期三</div>
+        <div class="hd__time font-digital" id="clockTime">00:00:00</div>
+      </div>
+      <div class="icon-btn" id="btnFull" title="全屏">
+        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== 平台整体运行状态 ===================== -->
+  <div class="strip" id="strip"></div>
+
+  <!-- ===================== 主体 ===================== -->
+  <div class="main">
+
+    <!-- 左栏 -->
+    <div class="col col--left">
+      <section class="panel p1">
+        <div class="panel__hd"><div class="panel__title">平台经营总览</div>
+          <div class="panel__extra" id="bizExtra">核心资产规模</div></div>
+        <div class="panel__bd">
+          <div class="kpi-row" id="kpiRow"></div>
+          <div class="donut-wrap">
+            <div class="donut-center">
+              <div class="donut-center__value font-digital" id="donutTotal">0</div>
+              <div class="donut-center__label">入驻厂家</div>
+            </div>
+            <div class="chart" id="chartDonut"></div>
+          </div>
+          <div class="sub-row" id="subRow"></div>
+        </div>
+      </section>
+
+      <section class="panel p2 pflex">
+        <div class="panel__hd"><div class="panel__title">工单调度中心</div>
+          <div class="panel__extra" id="woExtra">资源调度实时</div></div>
+        <div class="panel__bd">
+          <div class="wo-block">
+            <div class="wo-hd"><b>工单状态分布</b><span id="woTotalTxt">--</span></div>
+            <div class="wo-bar-wrap"><div class="chart" id="chartWoStatus"></div></div>
+            <div class="wo-hd" style="margin-top:12px"><b>厂家负载 TOP5</b><span>待接单积压</span></div>
+            <div class="load-wrap"><div class="load-chart" id="chartLoad"></div></div>
+            <div class="wo-foot" id="woFoot"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 中栏 -->
+    <div class="col col--center">
+      <section class="panel p3">
+        <div class="panel__hd"><div class="panel__title">核心运营指标趋势</div>
+          <div class="panel__extra">近 7 日</div></div>
+        <div class="panel__bd">
+          <div class="trend">
+            <div class="trend__blk">
+              <div class="trend__hd"><span class="trend__t">工单量</span><span class="badge badge--a" id="woBadge">--</span></div>
+              <div class="chart" id="chartWoTrend"></div>
+            </div>
+            <div class="trend__blk">
+              <div class="trend__hd"><span class="trend__t">设备在线率</span><span class="badge badge--w" id="onlineBadge">--%</span></div>
+              <div class="chart" id="chartOnline"></div>
+            </div>
+            <div class="trend__blk">
+              <div class="trend__hd"><span class="trend__t">SLA 达标率</span><span class="badge badge--a" id="slaBadge">--%</span></div>
+              <div class="chart" id="chartSla"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel pflex">
+        <div class="panel__hd"><div class="panel__title" id="mapTitle">厂商 · 客户地域覆盖</div>
+          <div class="panel__extra"><span id="mapExtra">点击福建省可下钻</span><button class="back-btn hidden" id="btnBack">← 返回全国</button></div></div>
+        <div class="panel__bd">
+          <div class="rmap">
+            <div class="rmap__chart" id="chartMap"></div>
+            <div class="rmap__overlay" id="mapOverlay"></div>
+            <div class="city-list hidden" id="cityList"></div>
+            <div class="rmap__legend"><span>客户密度</span><span class="rmap__bar"></span><span>低 → 高</span></div>
+            <div class="rmap__hint" id="mapHint"><span class="rmap__dot"></span>气泡=入驻厂家；色深=客户食堂密度；点击福建下钻</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 右栏 -->
+    <div class="col col--right">
+      <section class="panel pflex">
+        <div class="panel__hd"><div class="panel__title">异常告警中心</div>
+          <div class="panel__extra"><span class="rmap__dot" style="display:inline-block;vertical-align:middle;margin-right:6px"></span>平台级聚合</div></div>
+        <div class="panel__bd" style="display:flex;flex-direction:column">
+          <div class="level-row" id="levelRow"></div>
+          <div class="src-wrap">
+            <div class="src-pie"><div class="chart" id="chartSrc"></div></div>
+            <div class="src-legend" id="srcLegend"></div>
+          </div>
+          <div class="ticker" id="ticker">
+            <div class="ticker__hd"><span class="ticker__t">实时告警流</span><span class="ticker__hint">hover 暂停滚动</span></div>
+            <div class="ticker__vp"><div class="ticker__tr" id="tickerTrack"></div></div>
+          </div>
+          <div class="alarm-ft">每 60s 自动刷新 · 聚合自全部厂家与客户的告警事件</div>
+        </div>
+      </section>
+
+      <section class="panel p6">
+        <div class="panel__hd"><div class="panel__title">关键绩效 & 运营待办</div>
+          <div class="panel__extra">运营关注</div></div>
+        <div class="panel__bd">
+          <div class="kpi-score" id="kpiScore"></div>
+          <div class="todo" id="todoList"></div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>/*__ECHARTS__*/</script>
+<script>/*__GEOJSON__*/</script>
+<script>
+/* =========================================================================
+ * 后厨管家 · AIoT 平台运营监控大屏 —— 单文件静态版（平台运营视角）
+ * 零构建 / 零后端 / 双击即开；数据为演示 mock，60s 静默刷新
+ * 视角：平台方（运营/管理侧）—— 突出平台整体运行状态、核心业务数据、
+ *      资源调度、异常告警与关键绩效指标，弱化单一租户/终端细节
+ * 接入真实平台：把 fetchData() 内的 mock 生成器换成 HTTP 请求即可
+ * ========================================================================= */
+(function () {
+'use strict';
+
+var C = {
+  PRIMARY:'#41C0FF', GREEN:'#07C160', ORANGE:'#FA8C16', RED:'#FF4D4F',
+  PURPLE:'#B78FFF', TEAL:'#37D4CF', GRAY:'#94A3B8',
+  MAP_EMPTY:'#0B2B4F', MAP_LOW:'#16507E', MAP_HIGH:'#37D4CF',
+  TEXT:'#E6F1FF', TEXT_DIM:'#8FB3D9'
+};
+var LEVEL_COLOR = { urgent:C.RED, important:C.ORANGE, normal:C.PRIMARY };
+var LEVEL_TEXT  = { urgent:'紧急', important:'重要', normal:'一般' };
+var PLATFORM_LINES = ['安全生产','食品安全','环境消杀','经营分析','视频监控'];
+var LINE_COLORS = ['#41C0FF','#07C160','#FA8C16','#B78FFF','#37D4CF'];
+var DRILLABLE = '35';
+
+/* ---------------- 工具 ---------------- */
+function ri(a,b){ return Math.round(a + Math.random()*(b-a)); }
+function rf(a,b,d){ d = d===undefined?1:d; return Number((a + Math.random()*(b-a)).toFixed(d)); }
+function p2(n){ return String(n).padStart(2,'0'); }
+function fmt(n){ return Number(n).toLocaleString('en-US'); }
+function el(id){ return document.getElementById(id); }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+/* =========================================================================
+ * Mock 数据生成（平台运营视角）
+ * ========================================================================= */
+
+/* 平台整体运行状态 */
+function genHealth(){
+  return {
+    availability: rf(99.90, 99.99, 2),
+    nodesUp: 23, nodesTotal: 24,
+    mqBacklog: ri(0, 26),
+    latency: ri(58, 112),
+    apiToday: ri(1100000, 1420000),
+    syncAgo: ri(1, 9),
+    uptimeDays: 128
+  };
+}
+
+/* 核心业务数据 */
+function genBusiness(){
+  var cookware = 18, iot = 14;
+  return {
+    vendors: cookware + iot,
+    cookware: cookware, iot: iot,
+    customers: 186,
+    devices: 5248,
+    bindings: 6312,
+    newVendorsToday: ri(0, 3),
+    newCustomersToday: ri(4, 13),
+    pendingOnboarding: ri(3, 8),
+    struct: [ {name:'厨具厂家', value:cookware}, {name:'IoT设备厂家', value:iot} ]
+  };
+}
+
+/* 资源调度 - 工单 */
+function genWorkOrders(){
+  var pending = ri(18, 38), processing = ri(42, 72), confirming = ri(20, 42);
+  var completed = ri(820, 1240), closed = ri(420, 720);
+  var vendorLoad = [
+    { name:'福州厨具制造', pending:ri(6,15) },
+    { name:'厦门物联科技', pending:ri(5,13) },
+    { name:'泉州传感技术', pending:ri(4,11) },
+    { name:'漳州环境设备', pending:ri(3,9) },
+    { name:'莆田智能制造', pending:ri(2,7) }
+  ].sort(function(a,b){ return b.pending - a.pending; });
+  return {
+    status: { pending:pending, processing:processing, confirming:confirming, completed:completed, closed:closed },
+    vendorLoad: vendorLoad,
+    engineersOnline: ri(38, 52),
+    escalated: ri(2, 6)
+  };
+}
+
+/* 趋势：近 7 日 */
+function genTrends(){
+  var labels = ['周一','周二','周三','周四','周五','周六','周日'];
+  var now = new Date();
+  return labels.map(function(lb, i){
+    var d = new Date(now.getTime() - (6 - i) * 86400000);
+    return {
+      label: lb,
+      date: (d.getMonth()+1) + '/' + d.getDate(),
+      created: ri(22, 64),
+      completed: ri(20, 60),
+      onlineRate: rf(98.4, 99.8, 1),
+      sla: rf(94.5, 99.2, 1)
+    };
+  });
+}
+
+/* 地域：厂商/客户分布 */
+var PROV_CENTER = {
+  '福建省':[119.30,26.10], '广东省':[113.42,23.40], '浙江省':[120.20,30.30],
+  '江苏省':[118.80,32.06], '山东省':[117.00,36.40], '北京市':[116.40,39.90],
+  '上海市':[121.47,31.23], '四川省':[104.07,30.67]
+};
+function genRegions(){
+  return [
+    { name:'福建省', shortName:'福建', adcode:'35', vendors:9,  customers:62 },
+    { name:'广东省', shortName:'广东', adcode:'44', vendors:6,  customers:34 },
+    { name:'浙江省', shortName:'浙江', adcode:'33', vendors:4,  customers:22 },
+    { name:'江苏省', shortName:'江苏', adcode:'32', vendors:3,  customers:18 },
+    { name:'山东省', shortName:'山东', adcode:'37', vendors:3,  customers:15 },
+    { name:'北京市', shortName:'北京', adcode:'11', vendors:2,  customers:9 },
+    { name:'上海市', shortName:'上海', adcode:'31', vendors:2,  customers:8 },
+    { name:'四川省', shortName:'四川', adcode:'51', vendors:2,  customers:10 }
+  ];
+}
+var FUJIAN_CITY = [
+  ['福州市',[119.306239,26.075302],3,14], ['厦门市',[118.11022,24.490474],2,12],
+  ['泉州市',[118.589421,24.908853],2,10],  ['漳州市',[117.661801,24.510897],1,7],
+  ['莆田市',[119.007558,25.431011],1,5],   ['三明市',[117.635001,26.265444],0,4],
+  ['南平市',[118.178459,26.635627],0,4],   ['宁德市',[119.527082,26.65924],0,3],
+  ['龙岩市',[117.02978,25.091603],0,3]
+];
+function genFujianDetail(){
+  var cities = FUJIAN_CITY.map(function(b){
+    return { name:b[0], shortName:b[0].replace(/市$/,''), vendors:b[2], customers:b[3], center:b[1] };
+  });
+  var vTotal = cities.reduce(function(s,c){ return s + c.vendors; }, 0);
+  var cTotal = cities.reduce(function(s,c){ return s + c.customers; }, 0);
+  return { cities:cities, vTotal:vTotal, cTotal:cTotal };
+}
+
+/* 异常告警：平台级聚合 */
+function genAlarmLevels(){
+  return [ {level:'urgent',count:ri(1,4)}, {level:'important',count:ri(4,10)}, {level:'normal',count:ri(10,20)} ]
+    .map(function(x){ x.label = LEVEL_TEXT[x.level]; return x; });
+}
+function genAlarmSource(){
+  var base = { '安全生产':ri(8,16), '食品安全':ri(6,13), '环境消杀':ri(5,11), '经营分析':ri(3,8), '视频监控':ri(2,7) };
+  return PLATFORM_LINES.map(function(n, i){
+    return { name:n, value:base[n], color:LINE_COLORS[i] };
+  });
+}
+var ALARM_SEEDS = [
+  ['urgent','厦门物联科技','工单升级','WO-20261014-023','SLA 已消耗 210%，平台已介入处理'],
+  ['urgent','泉州第一中学食堂','设备离线','泉州一中后厨','12 台 IoT 设备连续离线超 30 分钟'],
+  ['important','福州厨具制造','工单积压','WO-20261013-118','待接单 18 单，响应超时预警'],
+  ['important','漳州环境设备','验收驳回','WO-20261012-087','验收 3 次驳回，需平台协调'],
+  ['important','莆田智能制造','备件缺货','莆田学院食堂','关键备件库存为 0，影响 4 单'],
+  ['important','厦门第一医院餐厅','数据延迟','厦门物联科技','指标上报延迟 8 分钟，已自动重连'],
+  ['normal','广州第三中学食堂','离线恢复','广州厨具','设备已重新上线，告警自动解除'],
+  ['normal','深圳机关食堂','阈值波动','深圳传感','油烟浓度短时触及阈值，已回落'],
+  ['normal','杭州实验小学食堂','工单完成','杭州物联','WO-20261013-204 已验收关闭'],
+  ['normal','南京一中食堂','待接单','南京厨具','新工单待厂家接单，SLA 计时中'],
+  ['normal','成都二中食堂','绑定待确认','成都环境','产权绑定待客户确认，7 日自动生效'],
+  ['important','福州大学餐厅','重复告警','福州物联','同设备 24h 内 3 次告警，疑似复发']
+].map(function(a){ return { level:a[0], subject:a[1], type:a[2], ref:a[3], content:a[4] }; });
+function genAlarmList(){
+  var now = Date.now();
+  return ALARM_SEEDS.map(function(s, i){
+    var t = new Date(now - i*ri(4,11)*60000 - ri(0,59)*1000);
+    return { id:'AL-'+(1000+i), level:s.level, subject:s.subject, type:s.type, ref:s.ref,
+             content:s.content,
+             time:p2(t.getHours())+':'+p2(t.getMinutes())+':'+p2(t.getSeconds()) };
+  });
+}
+
+/* 关键绩效指标 */
+function genKpi(){
+  return [
+    { label:'SLA 达标率', value:rf(95.0,99.2,1), unit:'%', tone:C.GREEN, target:'≥95%', ratio:rf(0.95,0.99,2) },
+    { label:'平均响应时长', value:ri(35,56), unit:'min', tone:C.GREEN, target:'≤60min', ratio:rf(0.6,0.95,2) },
+    { label:'平均修复时长', value:rf(5.4,8.2,1), unit:'h', tone:C.ORANGE, target:'≤8h', ratio:rf(0.7,0.95,2) },
+    { label:'故障复发率', value:rf(1.4,3.4,1), unit:'%', tone:C.GREEN, target:'≤5%', ratio:rf(0.3,0.7,2) },
+    { label:'设备在线率', value:rf(98.6,99.7,1), unit:'%', tone:C.GREEN, target:'≥99%', ratio:rf(0.985,0.997,3) }
+  ];
+}
+function genTodos(){
+  return [
+    { label:'待审核入驻申请', value:ri(3,8), tone:C.ORANGE },
+    { label:'待争议处理', value:ri(1,4), tone:C.RED },
+    { label:'待平台介入', value:ri(1,4), tone:C.RED },
+    { label:'验收超时工单', value:ri(2,7), tone:C.ORANGE }
+  ];
+}
+
+/* =========================================================================
+ * ECharts 图表
+ * ========================================================================= */
+echarts.registerMap('china', CHINA_GEOJSON);
+echarts.registerMap('fujian', FUJIAN_GEOJSON);
+
+var charts = { donut:null, woStatus:null, load:null, woTrend:null, online:null, sla:null, map:null, src:null };
+var axisCommon = {
+  axisLine:{ lineStyle:{ color:'rgba(143,179,217,0.35)' } },
+  axisTick:{ show:false },
+  axisLabel:{ color:'rgba(143,179,217,0.85)', fontSize:10 },
+  splitLine:{ lineStyle:{ color:'rgba(143,179,217,0.12)' } }
+};
+var tipCommon = {
+  backgroundColor:'rgba(4,18,52,0.92)', borderColor:'rgba(65,192,255,0.35)', borderWidth:1,
+  textStyle:{ color:C.TEXT, fontSize:12 }
+};
+function grad(c1,c2){ return { type:'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:c1},{offset:1,color:c2}] }; }
+
+/* ---------- 平台运行状态条 ---------- */
+function renderStrip(h){
+  var items = [
+    { l:'系统可用率', v:h.availability + '<small>%</small>', c:C.GREEN },
+    { l:'服务节点', v:h.nodesUp + '/' + h.nodesTotal, c:h.nodesUp===h.nodesTotal?C.GREEN:C.ORANGE },
+    { l:'消息队列积压', v:h.mqBacklog + '<small>条</small>', c:h.mqBacklog>20?C.ORANGE:C.GREEN },
+    { l:'平均响应时延', v:h.latency + '<small>ms</small>', c:h.latency>100?C.ORANGE:C.GREEN },
+    { l:'今日 API 调用', v:(h.apiToday/1e6).toFixed(2) + '<small>M</small>', c:C.PRIMARY },
+    { l:'数据同步', v:'<small>正常 ' + h.syncAgo + 's 前</small>', c:C.TEAL },
+    { l:'平台运行时长', v:h.uptimeDays + '<small>天</small>', c:C.PURPLE }
+  ];
+  el('strip').innerHTML =
+    '<div class="strip__label"><b>平台整体运行状态</b><span>实时健康度</span></div>' +
+    items.map(function(it){
+      return '<div class="strip__item">'+
+        '<span class="strip__ico" style="background:'+it.c+';color:'+it.c+'"></span>'+
+        '<div class="strip__meta"><span class="strip__l">'+it.l+'</span>'+
+        '<span class="strip__v font-digital">'+it.v+'</span></div></div>';
+    }).join('');
+}
+
+/* ---------- P1 经营总览 ---------- */
+function renderKPI(b){
+  var kpis = [
+    { label:'入驻厂家', value:fmt(b.vendors), sub:'厨具'+b.cookware+'/IoT'+b.iot, color:C.TEXT },
+    { label:'客户食堂', value:fmt(b.customers), sub:'覆盖多省市', color:C.GREEN },
+    { label:'接入设备', value:fmt(b.devices), sub:'全平台接入', color:C.PRIMARY },
+    { label:'绑定关系', value:fmt(b.bindings), sub:'装配+产权', color:C.TEAL }
+  ];
+  el('kpiRow').innerHTML = kpis.map(function(k){
+    return '<div class="kpi-chip"><div class="kpi-chip__label">'+k.label+'</div>'+
+      '<div class="kpi-chip__value font-digital" style="color:'+k.color+'">'+k.value+'</div>'+
+      '<div class="kpi-chip__sub">'+k.sub+'</div></div>';
+  }).join('');
+  el('subRow').innerHTML = [
+    { v:b.newVendorsToday, l:'今日新增厂家' },
+    { v:b.newCustomersToday, l:'今日新增客户' },
+    { v:b.pendingOnboarding, l:'待审核入驻' }
+  ].map(function(s){
+    return '<div class="sub-chip"><div class="sub-chip__v font-digital">'+s.v+'</div>'+
+      '<div class="sub-chip__l">'+s.l+'</div></div>';
+  }).join('');
+}
+function renderDonut(b){
+  var o = {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'item',
+      formatter:function(p){ return p.name+': '+p.value+' 家 ('+p.percent+'%)'; } }),
+    legend:{ orient:'vertical', right:4, top:'center', itemWidth:8, itemHeight:8, itemGap:10,
+      textStyle:{ color:C.TEXT_DIM, fontSize:12, lineHeight:14 },
+      data: b.struct.map(function(s){ return s.name; }) },
+    color: [C.ORANGE, C.PRIMARY],
+    series:[{ type:'pie', radius:['58%','80%'], center:['32%','50%'],
+      itemStyle:{ borderColor:'#041234', borderWidth:2 },
+      label:{show:false}, labelLine:{show:false},
+      emphasis:{ scale:true, scaleSize:4 },
+      data: b.struct }]
+  };
+  if (!charts.donut){ charts.donut = echarts.init(el('chartDonut')); charts.donut.setOption(o); }
+  else charts.donut.setOption(o);
+  el('donutTotal').textContent = b.vendors;
+}
+
+/* ---------- P2 工单调度 ---------- */
+function renderWoStatus(wo){
+  var s = wo.status;
+  var segs = [
+    { name:'待接单', value:s.pending, color:C.ORANGE },
+    { name:'处理中', value:s.processing, color:C.PRIMARY },
+    { name:'待验收', value:s.confirming, color:C.TEAL },
+    { name:'已完成', value:s.completed, color:C.GREEN },
+    { name:'已关闭', value:s.closed, color:C.GRAY }
+  ];
+  var total = segs.reduce(function(a,x){ return a + x.value; }, 0);
+  var o = {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'item',
+      formatter:function(p){ return p.name+': '+fmt(p.value)+' 单 ('+p.percent+'%)'; } }),
+    grid:{ left:0, right:0, top:6, bottom:22 },
+    xAxis:{ type:'value', max:total, show:false },
+    yAxis:{ type:'category', data:['工单'], show:false },
+    series:[{
+      type:'bar', stack:'wo', barWidth:26,
+      data: segs.map(function(x){ return { value:x.value, itemStyle:{ color:x.color } }; }),
+      label:{ show:true, position:'inside', color:'#041234', fontWeight:700, fontSize:11,
+        formatter:function(p){ return segs[p.dataIndex].name+': '+fmt(p.value); } }
+    }]
+  };
+  if (!charts.woStatus){ charts.woStatus = echarts.init(el('chartWoStatus')); charts.woStatus.setOption(o); }
+  else charts.woStatus.setOption(o);
+  el('woTotalTxt').textContent = '累计 ' + fmt(total) + ' 单';
+}
+function renderLoad(wo){
+  var top = wo.vendorLoad;
+  var max = Math.max.apply(null, top.map(function(v){ return v.pending; }).concat([1]));
+  var o = {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'axis', axisPointer:{type:'shadow'},
+      formatter:function(p){ return p[0].name+'<br/>待接单: '+p[0].value+' 单'; } }),
+    grid:{ left:8, right:24, top:6, bottom:6, containLabel:true },
+    xAxis:{ type:'value', max:max, axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick,
+      axisLabel:axisCommon.axisLabel, splitLine:axisCommon.splitLine },
+    yAxis:{ type:'category', data: top.map(function(v){ return v.name; }),
+      axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick,
+      axisLabel:{ color:C.TEXT_DIM, fontSize:11 } },
+    series:[{ type:'bar', barMaxWidth:14,
+      itemStyle:{ borderRadius:[0,3,3,0], color: grad(C.ORANGE,'rgba(250,140,22,0.25)') },
+      data: top.map(function(v){ return v.pending; }) }]
+  };
+  if (!charts.load){ charts.load = echarts.init(el('chartLoad')); charts.load.setOption(o); }
+  else charts.load.setOption(o);
+
+  el('woFoot').innerHTML =
+    footChip(fmt(wo.status.pending), '待接单', C.ORANGE) +
+    footChip(wo.engineersOnline, '在线工程师', C.GREEN) +
+    footChip(wo.escalated, '超时升级', C.RED);
+  function footChip(v, l, c){
+    return '<div class="wo-foot__chip"><div class="wo-foot__v font-digital" style="color:'+c+'">'+v+'</div>'+
+      '<div class="wo-foot__l">'+l+'</div></div>';
+  }
+}
+
+/* ---------- P3 趋势 ---------- */
+function renderWoTrend(t){
+  var o = {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'axis' }),
+    legend:{ data:['新建','完成'], top:0, right:0, itemWidth:10, itemHeight:10,
+      textStyle:{ color:C.TEXT_DIM, fontSize:10 } },
+    grid:{ left:34, right:10, top:26, bottom:22 },
+    xAxis:{ type:'category', data:t.map(function(p){ return p.label; }),
+      axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick, axisLabel:axisCommon.axisLabel, splitLine:{show:false} },
+    yAxis:{ type:'value', minInterval:10, axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick,
+      axisLabel:axisCommon.axisLabel, splitLine:axisCommon.splitLine },
+    series:[
+      { name:'新建', type:'bar', barMaxWidth:12, itemStyle:{ color: grad(C.PRIMARY,'rgba(65,192,255,0.2)') },
+        data:t.map(function(p){ return p.created; }) },
+      { name:'完成', type:'bar', barMaxWidth:12, itemStyle:{ color: grad(C.GREEN,'rgba(7,193,96,0.2)') },
+        data:t.map(function(p){ return p.completed; }) }
+    ]
+  };
+  if (!charts.woTrend){ charts.woTrend = echarts.init(el('chartWoTrend')); charts.woTrend.setOption(o); }
+  else charts.woTrend.setOption(o);
+  var last = t[t.length-1];
+  el('woBadge').textContent = '今日 ' + last.created + ' 单';
+}
+function renderOnline(t){
+  var o = {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'axis', valueFormatter:function(v){ return v+'%'; } }),
+    grid:{ left:38, right:10, top:16, bottom:22 },
+    xAxis:{ type:'category', data:t.map(function(p){ return p.label; }),
+      axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick, axisLabel:axisCommon.axisLabel, splitLine:{show:false} },
+    yAxis:{ type:'value', min:97, max:100, axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick,
+      axisLabel:Object.assign({},axisCommon.axisLabel,{formatter:'{value}%'}), splitLine:axisCommon.splitLine },
+    series:[{ type:'line', smooth:true, symbol:'none', lineStyle:{ width:2, color:C.TEAL },
+      areaStyle:{ color: grad('rgba(55,212,207,0.35)','rgba(55,212,207,0.02)') },
+      data:t.map(function(p){ return p.onlineRate; }) }]
+  };
+  if (!charts.online){ charts.online = echarts.init(el('chartOnline')); charts.online.setOption(o); }
+  else charts.online.setOption(o);
+  el('onlineBadge').textContent = '当前 ' + t[t.length-1].onlineRate + '%';
+}
+function renderSla(t){
+  var o = {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'axis', valueFormatter:function(v){ return v+'%'; } }),
+    grid:{ left:38, right:10, top:16, bottom:22 },
+    xAxis:{ type:'category', data:t.map(function(p){ return p.label; }),
+      axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick, axisLabel:axisCommon.axisLabel, splitLine:{show:false} },
+    yAxis:{ type:'value', min:90, max:100, axisLine:axisCommon.axisLine, axisTick:axisCommon.axisTick,
+      axisLabel:Object.assign({},axisCommon.axisLabel,{formatter:'{value}%'}), splitLine:axisCommon.splitLine },
+    series:[{ type:'line', smooth:true, symbol:'none', lineStyle:{ width:2, color:C.GREEN },
+      areaStyle:{ color: grad('rgba(7,193,96,0.32)','rgba(7,193,96,0.02)') },
+      data:t.map(function(p){ return p.sla; }) }]
+  };
+  if (!charts.sla){ charts.sla = echarts.init(el('chartSla')); charts.sla.setOption(o); }
+  else charts.sla.setOption(o);
+  el('slaBadge').textContent = '当前 ' + t[t.length-1].sla + '%';
+}
+
+/* ---------- P4 地图 ---------- */
+function regionColor(customers, max){
+  if (customers <= 0) return C.MAP_EMPTY;
+  var ratio = Math.min(customers/max, 1);
+  var lerp = function(a,b,t){ return Math.round(a+(b-a)*t); };
+  var stops = [[11,43,79],[22,80,126],[55,212,207]];
+  var seg = ratio < 0.5 ? 0 : 1;
+  var t = ratio < 0.5 ? ratio/0.5 : (ratio-0.5)/0.5;
+  var a = stops[seg], b = stops[seg+1];
+  return 'rgb('+lerp(a[0],b[0],t)+','+lerp(a[1],b[1],t)+','+lerp(a[2],b[2],t)+')';
+}
+var mapMode = 'china';
+var currentRegions = [];
+var currentFujian = null;
+function mapOptionForChina(){
+  var max = Math.max.apply(null, currentRegions.map(function(p){ return p.customers; }).concat([1]));
+  var byName = {}; currentRegions.forEach(function(p){ byName[p.name] = p; });
+  return {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'item',
+      formatter:function(pr){
+        if (pr.seriesType === 'effectScatter'){
+          var d = pr.data.raw || {};
+          return '<span style="color:#07C160">'+pr.name+'</span><br/>入驻厂家:'+d.vendors+' · 客户食堂:'+d.customers;
+        }
+        var r = byName[pr.name];
+        if (!r) return pr.name + '<br/><span style="color:#8FB3D9">暂无入驻</span>';
+        return '<span style="color:#41C0FF">'+r.name+'</span>' +
+          '<br/>入驻厂家:'+r.vendors+' · 客户食堂:'+r.customers;
+      } }),
+    geo:{ map:'china', roam:true, scaleLimit:{min:0.8,max:4},
+      layoutCenter:['50%','52%'], layoutSize:'100%', zoom:1.02, aspectScale:1.0,
+      label:{show:false},
+      itemStyle:{ areaColor:C.MAP_EMPTY, borderColor:'rgba(127,148,238,0.55)', borderWidth:1 },
+      emphasis:{ label:{show:true,color:'#fff',fontSize:13},
+        itemStyle:{ areaColor:'rgba(65,192,255,0.45)', borderColor:C.PRIMARY, borderWidth:2 } },
+      select:{ disabled:true },
+      regions: currentRegions.map(function(p){
+        return { name:p.name,
+          itemStyle:{ areaColor: p.adcode===DRILLABLE ? 'rgba(7,193,96,0.38)' : regionColor(p.customers,max),
+            borderColor: p.adcode===DRILLABLE ? C.GREEN : 'rgba(127,148,238,0.55)',
+            borderWidth: p.adcode===DRILLABLE ? 2 : 1 },
+          label:{ show:p.customers>0, color:C.TEXT, fontSize:12 } };
+      })
+    },
+    series:[{ type:'effectScatter', coordinateSystem:'geo', silent:true, zlevel:2,
+      rippleEffect:{ brushType:'stroke', scale:3, period:4 }, symbolSize:function(val){ return 6 + val[2]*2.2; },
+      itemStyle:{ color:C.GREEN, shadowBlur:8, shadowColor:C.GREEN },
+      data: currentRegions.filter(function(p){ return p.vendors>0; }).map(function(p){
+        var c = PROV_CENTER[p.name];
+        return { name:p.name, value:[c[0],c[1],p.vendors], raw:{vendors:p.vendors,customers:p.customers} };
+      }) }]
+  };
+}
+function mapOptionForFujian(){
+  var cities = currentFujian.cities;
+  var max = Math.max.apply(null, cities.map(function(c){ return c.customers; }).concat([1]));
+  var byName = {}; cities.forEach(function(c){ byName[c.name] = c; });
+  return {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'item',
+      formatter:function(pr){
+        if (pr.seriesType === 'effectScatter'){
+          var d = pr.data.raw || {};
+          return '<span style="color:#07C160">'+pr.name+'</span><br/>入驻厂家:'+d.vendors+' · 客户食堂:'+d.customers;
+        }
+        var r = byName[pr.name];
+        if (!r) return pr.name;
+        return '<span style="color:#41C0FF">'+r.name+'</span><br/>入驻厂家:'+r.vendors+' · 客户食堂:'+r.customers;
+      } }),
+    geo:{ map:'fujian', roam:true, scaleLimit:{min:0.8,max:4},
+      layoutCenter:['42%','54%'], layoutSize:'96%', zoom:1.0, aspectScale:1.0,
+      label:{show:false},
+      itemStyle:{ areaColor:C.MAP_EMPTY, borderColor:'rgba(127,148,238,0.55)', borderWidth:1 },
+      emphasis:{ label:{show:true,color:'#fff',fontSize:13},
+        itemStyle:{ areaColor:'rgba(65,192,255,0.45)', borderColor:C.PRIMARY, borderWidth:2 } },
+      select:{ disabled:true },
+      regions: cities.map(function(c){
+        return { name:c.name,
+          itemStyle:{ areaColor: regionColor(c.customers,max), borderColor:'rgba(127,148,238,0.55)', borderWidth:1 },
+          label:{ show:true, color:C.TEXT, fontSize:11 } };
+      })
+    },
+    series:[{ type:'effectScatter', coordinateSystem:'geo', silent:true, zlevel:2,
+      rippleEffect:{ brushType:'stroke', scale:3, period:4 }, symbolSize:function(val){ return 6 + val[2]*1.6; },
+      itemStyle:{ color:C.GREEN, shadowBlur:8, shadowColor:C.GREEN },
+      data: cities.filter(function(c){ return c.vendors>0; }).map(function(c){
+        return { name:c.name, value:[c.center[0],c.center[1],c.vendors], raw:{vendors:c.vendors,customers:c.customers} };
+      }) }]
+  };
+}
+function renderMap(){
+  if (!charts.map) charts.map = echarts.init(el('chartMap'));
+  charts.map.setOption(mapMode === 'china' ? mapOptionForChina() : mapOptionForFujian(), true);
+  renderMapOverlay();
+}
+function renderMapOverlay(){
+  var ov = el('mapOverlay');
+  if (mapMode === 'china'){
+    var vendors = currentRegions.reduce(function(s,p){ return s+p.vendors; },0);
+    var customers = currentRegions.reduce(function(s,p){ return s+p.customers; },0);
+    ov.innerHTML = stat('覆盖省份', currentRegions.length) + stat('入驻厂家', vendors) + stat('客户食堂', customers);
+    el('mapTitle').textContent = '厂商 · 客户地域覆盖';
+    el('mapExtra').textContent = '点击福建省可下钻';
+    el('btnBack').classList.add('hidden');
+    el('cityList').classList.add('hidden');
+    el('mapHint').classList.remove('hidden');
+    el('mapHint').innerHTML = '<span class="rmap__dot"></span>气泡=入驻厂家；色深=客户食堂密度；点击福建下钻';
+  } else {
+    ov.innerHTML = stat('覆盖地市', currentFujian.cities.length) +
+                   stat('入驻厂家', currentFujian.vTotal) + stat('客户食堂', currentFujian.cTotal);
+    el('mapTitle').textContent = '福建省 · 厂商客户分布';
+    el('mapExtra').textContent = '已下钻';
+    el('btnBack').classList.remove('hidden');
+    el('mapHint').classList.add('hidden');
+    renderCityList();
+  }
+  function stat(l,v){
+    return '<div class="ostat"><span class="ostat__l">'+l+'</span>'+
+           '<span class="ostat__v font-digital">'+v+'</span></div>';
+  }
+}
+function renderCityList(){
+  var cities = currentFujian.cities.slice().sort(function(a,b){ return b.customers-a.customers; });
+  var max = cities[0].customers;
+  el('cityList').classList.remove('hidden');
+  el('cityList').innerHTML = cities.map(function(c){
+    return '<div class="city-row"><span class="city-row__n">'+c.shortName+'</span>'+
+      '<span class="city-row__bar"><i style="width:'+(c.customers/max*100).toFixed(1)+'%"></i></span>'+
+      '<span class="city-row__v font-digital">'+c.customers+'</span></div>';
+  }).join('');
+}
+charts.mapClickBound = false;
+function bindMapClick(){
+  if (charts.mapClickBound || !charts.map) return;
+  charts.mapClickBound = true;
+  charts.map.on('click', function(params){
+    if (params.componentType !== 'geo' || !params.name) return;
+    if (mapMode === 'china'){
+      var p = currentRegions.filter(function(x){ return x.name===params.name; })[0];
+      if (!p || p.adcode !== DRILLABLE) return;
+      currentFujian = genFujianDetail();
+      mapMode = 'fujian';
+      renderMap();
+    }
+  });
+}
+
+/* ---------- P5 告警 ---------- */
+function renderLevels(levels){
+  el('levelRow').innerHTML = levels.map(function(s){
+    var c = LEVEL_COLOR[s.level];
+    return '<div class="level-card" style="border-color:'+c+'">'+
+      '<div class="level-card__c font-digital" style="color:'+c+'">'+s.count+'</div>'+
+      '<div class="level-card__l">'+s.label+'告警</div>'+
+      '<div class="level-card__s">今日累计</div></div>';
+  }).join('');
+}
+function renderSrc(src){
+  var o = {
+    backgroundColor:'transparent',
+    tooltip: Object.assign({}, tipCommon, { trigger:'item', formatter:function(p){ return p.name+': '+p.value+' 条'; } }),
+    legend:{ show:false },
+    color: src.map(function(s){ return s.color; }),
+    series:[{ type:'pie', radius:['45%','72%'], center:['50%','50%'],
+      label:{ show:false }, labelLine:{show:false},
+      itemStyle:{ borderColor:'#041234', borderWidth:2 },
+      data: src.map(function(s){ return { name:s.name, value:s.value }; }) }]
+  };
+  if (!charts.src){ charts.src = echarts.init(el('chartSrc')); charts.src.setOption(o); }
+  else charts.src.setOption(o);
+  el('srcLegend').innerHTML = src.map(function(s){
+    return '<div class="src-legend__item"><span class="src-legend__dot" style="background:'+s.color+'"></span>'+
+      s.name + '<span class="src-legend__v font-digital">'+s.value+'</span></div>';
+  }).join('');
+}
+var VISIBLE = 6, ITEM_STEP = 86, tickIdx = 0, tickAnim = true, tickTimer = null, alarmData = [];
+function renderAlarms(list){
+  alarmData = list;
+  var track = el('tickerTrack');
+  var all = list.concat(list.slice(0, VISIBLE));
+  track.innerHTML = all.map(function(it){
+    return '<div class="alarm">'+
+      '<div class="alarm__lv" style="background:'+LEVEL_COLOR[it.level]+'">'+LEVEL_TEXT[it.level]+'</div>'+
+      '<div class="alarm__bd">'+
+        '<div class="alarm__r1"><span class="alarm__sub">'+it.subject+'</span>'+
+        '<span class="alarm__time">'+it.time+'</span></div>'+
+        '<div class="alarm__r2">'+it.type+' · '+it.ref+'</div>'+
+        '<div class="alarm__ct">'+it.content+'</div>'+
+      '</div></div>';
+  }).join('');
+  tickIdx = 0; tickAnim = false;
+  track.classList.add('ticker__tr--no');
+  track.style.transform = 'translateY(0px)';
+  requestAnimationFrame(function(){
+    tickAnim = true;
+    track.classList.remove('ticker__tr--no');
+  });
+}
+function tick(){
+  var track = el('tickerTrack');
+  if (alarmData.length <= VISIBLE){ track.style.transform = 'translateY(0px)'; return; }
+  if (tickIdx >= alarmData.length){
+    track.classList.add('ticker__tr--no'); tickIdx = 0; track.style.transform = 'translateY(0px)';
+    requestAnimationFrame(function(){ track.classList.remove('ticker__tr--no'); });
+  } else {
+    tickIdx++;
+    track.style.transform = 'translateY(' + (-tickIdx*ITEM_STEP) + 'px)';
+  }
+}
+function startTick(){ stopTick(); tickTimer = setInterval(tick, 3200); }
+function stopTick(){ if (tickTimer){ clearInterval(tickTimer); tickTimer = null; } }
+
+/* ---------- P6 绩效 & 待办 ---------- */
+function renderKpiScore(kpis){
+  el('kpiScore').innerHTML = kpis.map(function(k){
+    return '<div class="score"><div class="score__v font-digital" style="color:'+k.tone+'">'+k.value+'<small style="font-size:12px;color:rgba(143,179,217,.8)">'+k.unit+'</small></div>'+
+      '<div class="score__l">'+k.label+'</div>'+
+      '<div class="score__t">目标 '+k.target+'</div>'+
+      '<div class="score__bar" style="width:'+Math.min(k.ratio*100,100).toFixed(0)+'%;background:'+k.tone+'"></div></div>';
+  }).join('');
+}
+function renderTodos(todos){
+  el('todoList').innerHTML = todos.map(function(t){
+    return '<div class="todo__item"><span class="todo__dot" style="background:'+t.tone+';color:'+t.tone+'"></span>'+
+      '<span class="todo__l">'+t.label+'</span>'+
+      '<span class="todo__v font-digital">'+t.value+'</span><span class="todo__u">项</span></div>';
+  }).join('');
+}
+
+/* =========================================================================
+ * 数据装载 / 轮询
+ * ========================================================================= */
+function fetchData(){
+  /* ★ 接入真实平台时:把以下 mock 换成 fetch('/api/platform/xxx').then(r=>r.json()) */
+  return Promise.resolve({
+    health: genHealth(),
+    business: genBusiness(),
+    workOrders: genWorkOrders(),
+    trends: genTrends(),
+    regions: genRegions(),
+    alarmLevels: genAlarmLevels(),
+    alarmSource: genAlarmSource(),
+    alarms: genAlarmList(),
+    kpi: genKpi(),
+    todos: genTodos()
+  });
+}
+function render(d){
+  renderStrip(d.health);
+  renderKPI(d.business);
+  renderDonut(d.business);
+  renderWoStatus(d.workOrders);
+  renderLoad(d.workOrders);
+  renderWoTrend(d.trends);
+  renderOnline(d.trends);
+  renderSla(d.trends);
+  currentRegions = d.regions;
+  if (!currentFujian) currentFujian = genFujianDetail();
+  renderMap();
+  bindMapClick();
+  renderLevels(d.alarmLevels);
+  renderSrc(d.alarmSource);
+  renderAlarms(d.alarms);
+  renderKpiScore(d.kpi);
+  renderTodos(d.todos);
+}
+function loadAll(){
+  return fetchData().then(render).catch(function(e){ console.error('[平台大屏] 数据刷新失败,保持原值:', e); });
+}
+
+/* ---------------- 时钟 ---------------- */
+var WEEK = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+function tickClock(){
+  var d = new Date();
+  el('clockDate').textContent = d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+' '+WEEK[d.getDay()];
+  el('clockTime').textContent = p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds());
+}
+
+/* ---------------- 等比缩放 ---------------- */
+function fitScreen(){
+  var s = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+  el('screen').style.transform = 'scale('+s+')';
+}
+window.addEventListener('resize', function(){
+  fitScreen();
+  Object.keys(charts).forEach(function(k){ if (charts[k]) charts[k].resize(); });
+});
+
+/* ---------------- 启动 ---------------- */
+el('btnBack').addEventListener('click', function(){ mapMode = 'china'; renderMap(); });
+el('ticker').addEventListener('mouseenter', stopTick);
+el('ticker').addEventListener('mouseleave', startTick);
+el('btnFull').addEventListener('click', function(){
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+});
+
+fitScreen();
+tickClock();
+loadAll();
+startTick();
+setInterval(tickClock, 1000);
+setInterval(loadAll, 60000);
+
+/* 调试钩子 */
+window.__iot = {
+  get charts(){ return charts; },
+  get mapMode(){ return mapMode; },
+  drill: function(){ currentFujian = genFujianDetail(); mapMode='fujian'; renderMap(); },
+  back:  function(){ mapMode='china'; renderMap(); }
+};
+})();
+</script>
+</body>
+</html>
